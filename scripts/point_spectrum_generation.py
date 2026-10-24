@@ -84,7 +84,7 @@ def generate_ters_data(filename, molecule_rotation, plot_spectrum):
 
     x_pos = np.linspace(-X_WIDTH/2, X_WIDTH/2, X_COUNT)
     y_pos = np.linspace(-Y_WIDTH/2, Y_WIDTH/2, Y_COUNT)
-    z = atom_pos[:, 2].max() + 3  # Tips distance from top atom of a molecule, A
+    z = atom_pos_rotated[:, 2].max() + 3  # Tips distance from top atom of a molecule, A
 
     spectrums = np.zeros((X_COUNT, Y_COUNT, wavenumber_range.size))
 
