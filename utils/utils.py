@@ -190,8 +190,8 @@ def normal_to_zyz_ters(normal):
     so that rotation_zyz_ters(φ₀,θ₀,ψ₀,…) carries normal → +Z.
     """
     n = normal/np.linalg.norm(normal)
-    phi   = -np.degrees(np.arctan2(n[1], n[0]))
+    phi   =  0
     theta =  np.degrees(np.arccos(   n[2]    ))
-    psi   =  0
+    psi   =  np.degrees(np.arctan2(n[0], n[1]))
     
     return phi, theta, psi
