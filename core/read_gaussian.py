@@ -209,7 +209,7 @@ def read_gaussian(file_name):
         for line in file:
             if label in line:
                 return line
-        return None
+        raise ValueError(f"Section '{label}' not found in {file.name}")
 
     # Reading the data from the Gaussian ouput file
     with open(file_name, 'r') as file:

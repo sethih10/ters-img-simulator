@@ -233,9 +233,8 @@ if __name__ == "__main__":
     parser.add_argument("--plot_spectrum", type=float, nargs='+', default=None, help="List of wavenumbers to plot the spectrum. Using default value calculates spectrum at normal modes of the molecule.")
     args = parser.parse_args()
 
-    # Setup logging
-    log_file = args.log_file     
-    configure_logging(log_file)
+    # Setup logging    
+    log_file = configure_logging(args.log_file)
 
     # Convert string paths to Path objects
     save_path = Path(args.save_path)
