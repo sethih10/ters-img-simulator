@@ -133,8 +133,10 @@ def process_fchk_file(args):
     configure_logging(log_file)
     log_status(f"Started processing file: {file_path.name}")
 
-    
-    if file_path.is_file():
+    try:
+
+        if not file_path.is_file():
+            raise FileNotFoundError(f"File {file_path} does not exist.")
         current_rotation = molecule_rotation
         coords, atomic_numbers = read_fchk(file_path)
         if current_rotation is None:
@@ -145,15 +147,14 @@ def process_fchk_file(args):
             #current_rotation = rotation_to_zyz_euler(R)
 
         image_data = generate_ters_data(file_path, current_rotation, plot_spectrum)
-    else:
-        image_data = None
-        log_status(f"File {file_path.name} does not exist.")
+        if image_data is None:
+            raise ValueError(f"Required section missing in .fchk")
 
-    if image_data is not None:
+
         atom_pos, atomic_numbers, x_pos, y_pos, frequencies, spectrums, filename = image_data
         save_ters_data(atom_pos, atomic_numbers, x_pos, y_pos, frequencies, spectrums, filename, save_path)
-    else:
-        log_status(f"Error processing file: {file_path.name}")
+    except Exception as e:
+        log_status(f"Error processing file: {file_path.name} - {str(e)}")
 
     log_status(f"Finished processing file: {file_path.name}")
 

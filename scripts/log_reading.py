@@ -45,7 +45,8 @@ def read_log(read_type, log_file):
         
         for log in logs:
             if 'Error processing file:' in log:
-                error_tasks.add(log.split('Error processing file: ')[1].strip())
+                error_tasks.add(log.split('Error processing file: ')[1].split(' - ')[0].strip())
+
         print(error_tasks)
 
         return error_tasks
