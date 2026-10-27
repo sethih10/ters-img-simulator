@@ -1,38 +1,37 @@
 import numpy as np
 
-def spectrum_real(mode_intensities, wavenumber_range, peak_width, lambda_0, T):
+def spectrum_real(frequencies, wavenumber_range, peak_width, lambda_0, T):
     """
-    Calculates and returns the intensity of the Raman spectrum in a given range.
+    Calculates and returns the Raman line shape of every vibrational mode in a given range.
+
+    NOTE: this used to take mode_intensities and return the summed spectrum at one tip position.
+    The line shapes do not depend on the tip position, so they are now computed once per molecule
+    and the spectrum at a tip position is:
+        spectrum = mode_intensities[:, 1] @ spectrum_real(frequencies, wavenumber_range, ...)
+    (identical to the old spectrum_real(mode_intensities, wavenumber_range, ...)).
 
     Arguments:
-        mode_intensities: np.ndarray -- the intensities of each vibrational mode
+        frequencies: np.ndarray -- the vibrational frequencies of each mode (unit: cm^-1)
         wavenumber_range: np.ndarray -- the range of frequencies
-        peak_width: int -- The full width at half maximum (FWHM) of the Raman vibrational peaks, 
+        peak_width: int -- The full width at half maximum (FWHM) of the Raman vibrational peaks,
                                 plotted as Lorentzian lines (unit: cm^-1)
         lambda_0: int -- incident wavelength (unit: nm)
         T: int -- Temperature, used to calculate the phonon population for each vibrational mode (unit: K)
-    
+
     Returns:
-        spectrum_total: np.ndarray -- the intensity of the spectrum in range wavenumber_range
+        lineshape: np.ndarray -- shape (modes, wavenumbers), zero rows for modes with frequency <= 0
     """
 
     parm = 0.6950302506112777  # Unit convert: 1K = 0.6950302506112777 cm-1
-    vib_count = mode_intensities.shape[0]  # Number of vibrational modes
-    spectrum = np.zeros((vib_count, wavenumber_range.size))
-    
-    # Calculating the spectrum
-    for i in range(vib_count):
-        if mode_intensities[i, 0] > 0:
-            T_factor = 1 - np.exp(-mode_intensities[i, 0] / (parm * T))
-            spectrum[i, :] = (
-                mode_intensities[i, 1] * peak_width**2 / (2 * np.pi) *
-                1.0 / ((wavenumber_range - mode_intensities[i, 0])**2 + 0.25 * peak_width**2) *
-                (10**7 / lambda_0 - mode_intensities[i, 0])**4 / 
-                (mode_intensities[i, 0] * T_factor * 1e9)
-            )
-        else:
-            spectrum[i, :] = 0 * wavenumber_range
-    
-    spectrum_total = np.sum(spectrum, axis=0)
+    lineshape = np.zeros((frequencies.size, wavenumber_range.size))
+    ok = frequencies > 0
+    f = frequencies[ok]
 
-    return spectrum_total
+    T_factor = 1 - np.exp(-f / (parm * T))
+    lineshape[ok] = (
+        peak_width**2 / (2 * np.pi) *
+        1.0 / ((wavenumber_range[None, :] - f[:, None])**2 + 0.25 * peak_width**2) *
+        ((10**7 / lambda_0 - f)**4 / (f * T_factor * 1e9))[:, None]
+    )
+
+    return lineshape

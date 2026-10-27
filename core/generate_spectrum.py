@@ -36,6 +36,6 @@ def generate_spectrum(filename, tip_xyz, E_type, peak_width, lambda_0, T, tip_wi
     elif (E_type == 1 or E_type == 2):
         mode_intensities, dipoles = \
             analytic_field(atom_polarizabilities, atoms, frequencies, E_type, atom_pos, R, tip_xyz, tip_width)
-    spectrum = spectrum_real(mode_intensities, wavenumber_range, peak_width, lambda_0, T)
+    spectrum = mode_intensities[:, 1] @ spectrum_real(frequencies, wavenumber_range, peak_width, lambda_0, T)
 
     return spectrum, wavenumber_range

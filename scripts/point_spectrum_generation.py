@@ -88,6 +88,9 @@ def generate_ters_data(filename, molecule_rotation, plot_spectrum):
 
     spectrums = np.zeros((X_COUNT, Y_COUNT, wavenumber_range.size))
 
+    # Line shapes depend only on the molecule, not on the tip: compute them once
+    lineshape = spectrum_real(frequencies, wavenumber_range, PEAK_WIDTH, LAMBDA_0, T)
+
     for dx in range(X_COUNT):
         for dy in range(Y_COUNT):
             
@@ -105,7 +108,7 @@ def generate_ters_data(filename, molecule_rotation, plot_spectrum):
             mode_intensities, dipoles = \
                 analytic_field(atom_polarizabilities, atoms, frequencies, E_TYPE, atom_pos, R, tip_xyz, TIP_WIDTH)
 
-            spectrums[dx, dy, :] = spectrum_real(mode_intensities, wavenumber_range, PEAK_WIDTH, LAMBDA_0, T)
+            spectrums[dx, dy, :] = mode_intensities[:, 1] @ lineshape
     
     for i in range(len(wavenumber_range)):
         spectrums[:, :, i] = spectrums[:, :, i].T
