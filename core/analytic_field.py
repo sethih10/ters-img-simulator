@@ -17,7 +17,7 @@ def analytic_field(atom_polarizabilities, atoms, frequencies, E_type, atom_pos=N
 
     Returns:
         intensity: np.ndarray -- intensity of each vibrational mode; shape (modes, 2), or (M, modes, 2) for M tips
-        dipole: np.ndarray -- polarized dipole of each atom for each mode; shape (modes, 3*atoms), or (M, modes, 3*atoms) for M tips
+        dipole: np.ndarray -- polarized dipole of each atom for each mode; shape (modes, 3*atoms); None for M tips (not computed)
     """
     # One tip (3,) or many tips (M, 3), e.g. a whole row of the image grid in one call
     many_tips = tip_xyz is not None and np.ndim(tip_xyz) == 2
@@ -57,13 +57,16 @@ def analytic_field(atom_polarizabilities, atoms, frequencies, E_type, atom_pos=N
 
         return mode_intensities, dipoles
 
-    # Many tips: the same calculation as above, for all tips at once
-    E_local = E_local.reshape(tips.shape[0], 3*atoms)                              # (tips, 3*atoms)
-    mode_intensities = np.zeros((tips.shape[0], 3*atoms-6, 2))
-    dipoles = np.tensordot(atom_polarizabilities, E_local, axes=([2], [1]))        # (modes, 3*atoms, tips)
-    E_scattering = np.einsum('ti,kit->tk', E_local, dipoles)                       # (tips, modes)
+    # Many tips: same E . (alpha E), using only each atom's 3x3 block (no atom-atom coupling, so the rest of alpha is zero)
+    n_modes = atom_polarizabilities.shape[0]
+    blocks = np.stack([atom_polarizabilities[:, 3*i:3*i+3, 3*i:3*i+3] for i in range(atoms)], axis=1)  # (modes, atoms, 3, 3)
+    EE = (E_local[..., :, None] * E_local[..., None, :]).reshape(tips.shape[0], 9*atoms)               # (tips, 9*atoms)
+    E_scattering = EE @ blocks.reshape(n_modes, 9*atoms).T                                             # (tips, modes)
 
+    mode_intensities = np.zeros((tips.shape[0], 3*atoms-6, 2))
     mode_intensities[..., 0] = frequencies
     mode_intensities[..., 1] = E_scattering**2
 
-    return mode_intensities, dipoles.transpose(2, 0, 1)                            # dipoles: (tips, modes, 3*atoms)
+    # Dipoles are not needed here. If needed, e.g. for a far-field Green's function:
+    # dipoles = np.einsum('knab,tnb->tkna', blocks, E_local).reshape(tips.shape[0], n_modes, 3*atoms)  # (tips, modes, 3*atoms)
+    return mode_intensities, None
