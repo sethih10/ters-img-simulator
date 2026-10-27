@@ -92,23 +92,12 @@ def generate_ters_data(filename, molecule_rotation, plot_spectrum):
     lineshape = spectrum_real(frequencies, wavenumber_range, PEAK_WIDTH, LAMBDA_0, T)
 
     for dx in range(X_COUNT):
-        for dy in range(Y_COUNT):
-            
-            # Currently field types 0 and 1 are not used, so condition statement is commented out
-            """
-            if (E_TYPE == 0):
-                mode_intensities, dipoles = \
-                    analytic_field(atom_polarizabilities, atoms, frequencies, E_TYPE)
-            elif (E_TYPE == 1 or E_TYPE == 2):
-                tip_xyz = np.array([x_pos[dx], y_pos[dy], 3])
-                mode_intensities, dipoles = \
-                    analytic_field(atom_polarizabilities, atoms, frequencies, E_TYPE, atom_pos, R, tip_xyz, tip_width)
-            """
-            tip_xyz = np.array([x_pos[dx], y_pos[dy], z])
-            mode_intensities, dipoles = \
-                analytic_field(atom_polarizabilities, atoms, frequencies, E_TYPE, atom_pos, R, tip_xyz, TIP_WIDTH)
+        # All tips of this grid row (fixed x, every y) in one call: tip_xyz has shape (Y_COUNT, 3)
+        tip_xyz = np.column_stack([np.full(Y_COUNT, x_pos[dx]), y_pos, np.full(Y_COUNT, z)])
+        mode_intensities, dipoles = \
+            analytic_field(atom_polarizabilities, atoms, frequencies, E_TYPE, atom_pos, R, tip_xyz, TIP_WIDTH)
 
-            spectrums[dx, dy, :] = mode_intensities[:, 1] @ lineshape
+        spectrums[dx, :, :] = mode_intensities[..., 1] @ lineshape
     
     for i in range(len(wavenumber_range)):
         spectrums[:, :, i] = spectrums[:, :, i].T
