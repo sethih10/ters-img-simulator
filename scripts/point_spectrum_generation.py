@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 import numpy as np
 from ters_img_simulator.core.load_molecule import load_molecule
+from ters_img_simulator.core.read_gaussian import read_gaussian
 from ters_img_simulator.core.analytic_field import analytic_field
 from ters_img_simulator.core.spectrum_real import spectrum_real
 import time as time
@@ -53,7 +54,7 @@ else:
     cpus = os.cpu_count()
 
 
-def generate_ters_data(filename, molecule_rotation, plot_spectrum):
+def generate_ters_data(filename, molecule_rotation, plot_spectrum, reader=read_gaussian):
     """
     Calculates the Raman spectra for a grid on top of a molecule with desired resolution.
 
@@ -61,6 +62,7 @@ def generate_ters_data(filename, molecule_rotation, plot_spectrum):
         filename: Path object -- the .fchk file that contains molecule data.
         molecule_rotation: list -- list of angles that defines the rotation of the molecule. (unit: degrees)
         plot_spectrum: list -- Lis of frequencies where spectrum is calculated. If None, the spectrum is calculated at normal modes of the molecule.
+        reader: callable -- turns filename into the read_gaussian tuple (default: Gaussian .fchk reader).
 
     Returns:
         atom_pos_rotated: np.ndarray -- positions of atoms in the molecule with wanted rotation applied on them (unit: Angstrom)
@@ -72,7 +74,7 @@ def generate_ters_data(filename, molecule_rotation, plot_spectrum):
     """
     PHI, THETA, PSI = molecule_rotation
 
-    result = load_molecule(filename, PHI, THETA, PSI)
+    result = load_molecule(filename, PHI, THETA, PSI, reader=reader)
     if result is None:
         return None
     atom_polarizabilities, atoms, frequencies, atom_pos, atom_pos_rotated, atomic_numbers, R = result
@@ -116,7 +118,7 @@ def save_ters_data(atom_pos, atomic_numbers, x_pos, y_pos, frequencies, spectrum
 
 
 def process_fchk_file(args):
-    file_path, save_path, log_file, molecule_rotation, plot_spectrum = args
+    file_path, save_path, log_file, molecule_rotation, plot_spectrum, pca_atoms = args
     """
     Generates data to be able to create a simulated TERS image for a molecule and saves the 
     data in a file.
@@ -132,8 +134,7 @@ def process_fchk_file(args):
         current_rotation = molecule_rotation
         coords, atomic_numbers = read_fchk(file_path)
         if current_rotation is None:
-            eigvals, eigvecs, X = pca(coords)
-            normal = eigvecs[:, 0]
+            normal = molecule_normal(coords, atomic_numbers, pca_atoms)
             current_rotation = normal_to_zyz_ters(normal)
             #_, R = rotation(normal, X)
             #current_rotation = rotation_to_zyz_euler(R)
@@ -151,7 +152,7 @@ def process_fchk_file(args):
     log_status(f"Finished processing file: {file_path.name}")
 
 
-def generate_data_from_fchk_files(directory_path, save_path, log_file, molecule_rotation, plot_spectrum):
+def generate_data_from_fchk_files(directory_path, save_path, log_file, molecule_rotation, plot_spectrum, pca_atoms="all"):
     """
     Generating and saving image data for a group of molecules.
     """
@@ -162,7 +163,7 @@ def generate_data_from_fchk_files(directory_path, save_path, log_file, molecule_
     t_0 = time.time()
     with multiprocessing.Pool(processes=cpus) as pool:
         with tqdm(total=num_files) as pbar:
-            for _ in pool.imap_unordered(process_fchk_file, [(file_path, save_path, log_file, molecule_rotation, plot_spectrum) for file_path in file_paths]):
+            for _ in pool.imap_unordered(process_fchk_file, [(file_path, save_path, log_file, molecule_rotation, plot_spectrum, pca_atoms) for file_path in file_paths]):
                 pbar.update(1)
 
     t_1 = time.time()
@@ -223,6 +224,7 @@ if __name__ == "__main__":
         help="Euler angles in degrees. If omitted, PCA-based auto-rotation is used.",
     )
     parser.add_argument("--plot_spectrum", type=float, nargs='+', default=None, help="List of wavenumbers to plot the spectrum. Using default value calculates spectrum at normal modes of the molecule.")
+    parser.add_argument("--pca_atoms", choices=["all", "heavy"], default="all", help="Atoms used for the PCA normal in auto-rotation. 'heavy' falls back to all atoms if the heavy atoms define no plane.")
     args = parser.parse_args()
 
     # Setup logging    
@@ -237,4 +239,4 @@ if __name__ == "__main__":
     plot_spectrum = args.plot_spectrum
 
     # Generating the data for molecules
-    generate_data_from_fchk_files(directory_path, save_path, log_file, molecule_rotation, plot_spectrum)
+    generate_data_from_fchk_files(directory_path, save_path, log_file, molecule_rotation, plot_spectrum, args.pca_atoms)

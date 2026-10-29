@@ -76,6 +76,26 @@ def pca(coords):
     return eigvals, eigvecs, X
 
 
+def molecule_normal(coords, atomic_numbers, pca_atoms="all"):
+    """
+    Normal of the molecular plane: the PCA axis with the smallest variance.
+    pca_atoms="heavy" uses only the non-hydrogen atoms. It falls back to all atoms when there
+    are fewer than 3 heavy atoms or they are (nearly) collinear, as their plane is then undefined.
+    """
+    coords = np.asarray(coords).reshape(-1, 3)
+    if pca_atoms == "heavy":
+        heavy = coords[np.asarray(atomic_numbers) > 1]
+        if len(heavy) >= 3:
+            eigvals, eigvecs, _ = pca(heavy)
+            if eigvals[1] > 1e-3*eigvals[2]:  # second axis non-degenerate -> plane defined
+                return eigvecs[:, 0]
+    elif pca_atoms != "all":
+        raise ValueError(f"pca_atoms must be 'all' or 'heavy', got {pca_atoms!r}")
+
+    _, eigvecs, _ = pca(coords)
+    return eigvecs[:, 0]
+
+
 
 # Compute rotated coords lying in the z plane
 def rotation(normal, X):

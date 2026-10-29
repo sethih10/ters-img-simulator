@@ -71,12 +71,14 @@ Optional arguments:
 ```bash
 --molecule_rotation <phi theta psi>
 --plot_spectrum <w1 w2 w3 ...>
+--pca_atoms {all,heavy}
 ```
 
 Rotation behavior:
 
 - If `--molecule_rotation` is provided, those Euler angles are used directly.
 - If `--molecule_rotation` is omitted, the script computes a PCA-based normal from atomic coordinates and auto-rotates the molecule so that normal aligns with the tip-axis convention used by the simulator.
+- `--pca_atoms` picks the atoms for that PCA: `all` (default) or `heavy` (non-hydrogen only). `heavy` falls back to all atoms when there are fewer than 3 heavy atoms or they are collinear.
 
 Example:
 

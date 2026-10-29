@@ -1,7 +1,24 @@
 import numpy as np
 from ters_img_simulator.core.read_gaussian import read_gaussian
 
-def load_molecule(file_name, phi_0, theta_0, psi_0):
+
+def rotation_matrix(phi_0, theta_0, psi_0):
+    """
+    Rotation matrix of the Euler angles (degrees). Atoms are rotated as atom_pos @ R.
+    """
+    phi, theta, psi = phi_0/180*np.pi, theta_0/180*np.pi, psi_0/180*np.pi
+    return np.array([
+        [np.cos(psi)*np.cos(phi) - np.cos(theta)*np.sin(phi)*np.sin(psi),
+        np.cos(psi)*np.sin(phi) + np.cos(theta)*np.cos(phi)*np.sin(psi),
+        np.sin(psi)*np.sin(theta)],
+        [-np.sin(psi)*np.cos(phi) - np.cos(theta)*np.sin(phi)*np.cos(psi),
+        -np.sin(psi)*np.sin(phi) + np.cos(theta)*np.cos(phi)*np.cos(psi),
+        np.cos(psi)*np.sin(theta)],
+        [np.sin(theta)*np.sin(phi), -np.sin(theta)*np.cos(phi), np.cos(theta)]
+    ])
+
+
+def load_molecule(file_name, phi_0, theta_0, psi_0, reader=read_gaussian):
     """
     Calculates and returns atomistic Raman polarizabilities of the atoms of the molecule.
     The rotation matrix R used to take into consideration the orientation of the molecule.
@@ -9,7 +26,8 @@ def load_molecule(file_name, phi_0, theta_0, psi_0):
     Arguments:
         file_name: Path object -- the Gaussian output file to read
         phi_0, theta_0, psi_0: int -- The desired rotation of the molecule in degrees
-    
+        reader: callable -- returns the same tuple as read_gaussian(file_name) (e.g. the QM9S adapter)
+
     Returns: 
         atom_polarizabilities_rotated: np.ndarray -- the atomistic Raman polarizabilities of the molecule
         atoms: int -- the number of atoms in a molecule
@@ -20,7 +38,7 @@ def load_molecule(file_name, phi_0, theta_0, psi_0):
 
     unit_scale = 0.52917721092  # Converting units from bohr to A
     #red_masses, frequencies, polar_derivatives, atom_an, atom_pos, atomic_numbers, N1, N2 = read_gaussian(file_name)
-    result = read_gaussian(file_name)
+    result = reader(file_name)
     if result is None:
         return None
 
@@ -60,17 +78,7 @@ def load_molecule(file_name, phi_0, theta_0, psi_0):
         else:
             return 0
 
-    # Defining the rotation matrix
-    phi, theta, psi = phi_0/180*np.pi, theta_0/180*np.pi, psi_0/180*np.pi
-    R = np.array([
-        [np.cos(psi)*np.cos(phi) - np.cos(theta)*np.sin(phi)*np.sin(psi), 
-        np.cos(psi)*np.sin(phi) + np.cos(theta)*np.cos(phi)*np.sin(psi), 
-        np.sin(psi)*np.sin(theta)],
-        [-np.sin(psi)*np.cos(phi) - np.cos(theta)*np.sin(phi)*np.cos(psi), 
-        -np.sin(psi)*np.sin(phi) + np.cos(theta)*np.cos(phi)*np.cos(psi), 
-        np.cos(psi)*np.sin(theta)],
-        [np.sin(theta)*np.sin(phi), -np.sin(theta)*np.cos(phi), np.cos(theta)]
-    ])
+    R = rotation_matrix(phi_0, theta_0, psi_0)
 
     # R_atom_positions = np.array([
     #     [np.cos(psi), -np.sin(psi), 0],
