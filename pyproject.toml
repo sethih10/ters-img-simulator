@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ters-img-simulator"
+version = "0.2.0"
+description = "Simulated tip-enhanced Raman spectroscopy (TERS) images from Gaussian .fchk files or the QM9S dataset"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "tqdm", "matplotlib"]
+
+[project.urls]
+Repository = "https://github.com/sethih10/ters-img-simulator"
+
+[project.scripts]
+ters-qm9s-generate = "ters_img_simulator.qm9s_adapter.generate:main"
+ters-qm9s-rotations = "ters_img_simulator.qm9s_adapter.rotations:main"
+
+# The repository root is the package itself (imports are `ters_img_simulator.core...`), so the
+# root is mapped onto that name instead of moving the code into a src/ folder.
+[tool.setuptools]
+package-dir = { "ters_img_simulator" = "." }
+packages = [
+    "ters_img_simulator",
+    "ters_img_simulator.core",
+    "ters_img_simulator.utils",
+    "ters_img_simulator.scripts",
+    "ters_img_simulator.qm9s_adapter",
+]

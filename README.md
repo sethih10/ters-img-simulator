@@ -39,6 +39,10 @@ ters_img_simulator/
 │   ├── load_molecule.py
 │   ├── read_gaussian.py
 │   └── spectrum_real.py
+├── qm9s_adapter/
+│   ├── generate.py
+│   ├── reader.py
+│   └── rotations.py
 ├── scripts/
 │   ├── log_reading.py
 │   └── point_spectrum_generation.py
@@ -89,6 +93,10 @@ python ters_img_simulator/scripts/point_spectrum_generation.py \
   /path/to/logs/
 ```
 
+## QM9S dataset
+
+`qm9s_adapter/` runs the same simulator on the QM9S dataset (`qm9s_csv.zip`) instead of Gaussian `.fchk` files: it redoes the vibrational analysis from the QM9S Hessian, orients every molecule from a shared rotation table and can centre it on the grid (`--center`). See [`qm9s_adapter/README.md`](qm9s_adapter/README.md).
+
 ## Output format
 
 For each input `<name>.fchk`, the script writes:
@@ -101,7 +109,7 @@ Each `.npz` contains:
 - `x_pos`
 - `y_pos`
 - `frequencies`
-- `spectrums` (shape: `X_COUNT x Y_COUNT x N_modes`)
+- `spectrums` (shape: `Y_COUNT x X_COUNT x K`, indexed `[iy, ix, k]`): intensity with the tip at `(x_pos[ix], y_pos[iy])`, evaluated at wavenumber `frequencies[k]`. Each channel is the Lorentzian-broadened sum over all modes (width `PEAK_WIDTH`), not a single isolated mode.
 
 ## Simulation defaults (current code)
 
@@ -117,12 +125,3 @@ Defined in `scripts/point_spectrum_generation.py`:
 - Multiprocessing workers:
   - `SLURM_CPUS_PER_TASK` when available
   - otherwise `os.cpu_count()`
-
-## Logging and troubleshooting
-
-- Use `scripts/log_reading.py` to inspect unfinished or failed files:
-
-```bash
-python ters_img_simulator/scripts/log_reading.py 0 <log_file>  # unfinished
-python ters_img_simulator/scripts/log_reading.py 1 <log_file>  # errors
-```

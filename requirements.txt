@@ -1,0 +1,6 @@
+# Environment used to generate the QM9S datasets (Triton `module load scicomp-python-env`, Python 3.12.11).
+# Minimum requirements are in pyproject.toml; pin these to reproduce the data as closely as possible
+# (other numpy/BLAS builds differ at ~1e-15 and can flip the sign of degenerate PCA axes).
+numpy==2.2.6
+tqdm==4.68.4
+matplotlib==3.10.6
